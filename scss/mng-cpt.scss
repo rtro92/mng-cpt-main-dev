@@ -1,0 +1,110 @@
+// Variables
+$mng_cpt_red: 	rgb(225,106,106);
+$mng_cpt_red_h:	rgb(233,50,50);
+
+$max_width: 1000px;
+$box_shadow: 0px 10px 10px -10px rgba(0,0,0,.8);
+$border: 2px solid #c3c2c9;
+
+// Existing CPTs
+.mng-cpt-current-wrap {
+	border: $border;
+	background-color: #FFF;
+	max-width: $max_width;
+	font-size: 16px;
+	box-sizing: border-box;
+	box-shadow: $box_shadow;
+	.mng-cpt-current-row {
+		display: flex;		
+		padding: 0 .5rem;
+		.mng-cpt-col {
+			padding: 1rem;
+		}
+		.col-name {
+			width: 20%;
+			display: flex;
+			align-items: center;
+		}
+		.col-number {
+			width: 25%;
+			display: flex;
+			align-items: center;
+		}
+		.col-rename {
+			display: flex;
+			align-items: center;
+			.rename-container {
+				display: flex;
+				.btn-rename {
+					background-color: rgb(215, 215, 215);
+					color: #FFF;
+					text-decoration: none;
+					margin-left: 1rem;
+					pointer-events: none;
+					&:hover {
+						background-color: rgb(90, 90, 90);
+					}
+					&.has-text {
+						pointer-events: all;
+						background-color: rgb(135, 135, 135);
+					}
+				}
+			}
+		}
+		.col-delete {
+			display: flex;
+			.btn-delete {				
+				background-color: $mng_cpt_red;
+				color: #FFF;				
+				margin-right: 1rem;
+				&:hover {
+					background-color: $mng_cpt_red_h;
+				}
+				&.active {
+					background-color: $mng_cpt_red_h;
+				}
+			}
+			.mng-hidden {
+				flex: 1;
+				visibility: hidden;
+				.del-yes {
+					padding-right: 30px;
+					text-decoration: none;
+					&:hover {
+						text-decoration: underline;
+					}
+				}			
+				.del-no {					
+					cursor: pointer;
+					color: #2271b1;
+					&:hover {
+						text-decoration: underline;
+					}
+				}
+			}
+		}
+		&:nth-of-type(odd) {
+			background-color: rgba(0,0,0,.1);
+		}
+	}
+	.mng-cpt-btn {		
+		cursor: pointer;
+		text-align: center;
+		line-height: 2;
+		width: 100px;
+		align-self: center;
+	}
+}
+
+// Form
+.create-new-cpts {
+	margin-top: 4rem;
+	.create-box {
+		background-color: #FFF;
+		border: $border;
+		padding: 1rem;	
+		max-width: $max_width;
+		box-sizing: border-box;
+		box-shadow: $box_shadow;
+	}
+}
