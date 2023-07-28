@@ -10,7 +10,6 @@ jQuery(document).ready(function($) {
 		$(this).parent().prev().removeClass('active');
 	});
 
-
 });
 
 
@@ -47,7 +46,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
   });
 });
-
-
-
-// Warning: Undefined array key "mng_cpt_nonce" in /var/www/html/wp-content/plugins/mng-cpt/mng-cpt.php on line 281
