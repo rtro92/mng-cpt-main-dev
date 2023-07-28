@@ -22,11 +22,11 @@ class mng_cpt {
 		
 		// Activate CPTS
 		add_action('init', array($this, 'activate_cpts'));
-		
+				
 		// ADMIN POST ACTIONS
 		add_action('admin_post_mng_cpt_delete', array($this, 'custom_post_type_manager_delete'));
 		add_action('admin_post_mng_cpt_rename', array($this, 'mng_cpt_rename_posts'));
-
+		
 	}
 
 	
@@ -73,24 +73,12 @@ class mng_cpt {
 
 	// Setup Sections
 	public function setup_sections() {
-		add_settings_section('first_section', '', array($this, 'section_callback'), 'manage_cpts');		
+		add_settings_section('first_section', '', '', 'manage_cpts');		
 	}
 
 
 
-	public function section_callback($args) {
-		// switch( $args['id']) {
-		// 	case 'first_section':
-		// 		echo 'first';
-		// 		break;
-		// 	case 'second_section':
-		// 		echo 'second';
-		// 		break;												
-		// }
-	}
-
-
-
+	// Set up fields for new CPT
 	public function setup_fields() {
 		$fields = array(
 			array(
@@ -124,47 +112,27 @@ class mng_cpt {
 		if(!$value) { // if no value exists
 			$value = $args['default']; // Set default
 		}
-
-		// Check which type of field we want
-		switch($args['type']){
-			case 'text':
-				if (is_array($value)) {
-					$value = implode(',',$value);
-				}
-				printf(
-				    '<input name="%1$s[]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
-				    $args['uid'],
-				    $args['type'],
-				    $args['placeholder'],
-				    ''
-				);
-				break;
-			case 'textarea':
-				printf( '<textarea name="%1$s" id="%1$s" placeholder="%2$s" rows="5" cols="50">%3$s</textarea>',
-					$args['uid'], $args['placeholder'], $value
-				);
-				break;
-			case 'select':
-				if(!empty($args['options']) && is_array($args['options'])) {
-
-					$options_markup = '';
-					foreach($args['options'] as $key => $label ){					
-						$options_markup .= sprintf( '<option value="%s" %s>%s</option>', $key, selected($value, $key, false), $label );
-
-					}
-					printf( '<select name="%1$s" id="%1$s">%2$s</select>', $args['uid'], $options_markup );
-				}
-				break;
+		
+	
+		if (is_array($value)) {
+			$value = implode(',',$value);
 		}
-
+		printf(
+		    '<input name="%1$s[]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
+		    $args['uid'],
+		    $args['type'],
+		    $args['placeholder'],
+		    ''
+		);
+				
 		// If there is helper text
 		if($helper = $args['helper']) {
-			printf( '<span class="helper">%s</span>', $helper ); // show it
+			printf( '<span class="helper">%s</span>', $helper ); 
 		}
 
 		//If there is supplemental text
 		if( $supplemental = $args['supplemental']) {
-			printf( '<p class="description">%s</p>', $supplemental); // show it
+			printf( '<p class="description">%s</p>', $supplemental);
 		}
 	}
 
@@ -172,15 +140,16 @@ class mng_cpt {
 
 	// Sanitizes names
 	public function sanitize_cpt_names($value) {
-	    $existing_values = get_option('mng_cpt_names', array());
+		
+	    $existing_cpts = get_option('mng_cpt_names', array());
 
 	    if (!empty($value)) {
 	        $sanitized_values = array_map('sanitize_text_field', $value);
-	        $merged_values = array_merge($existing_values, $sanitized_values);
+	        $merged_values = array_merge($existing_cpts, $sanitized_values);
 	        return array_unique($merged_values);
 	    }
 	    
-	    return $existing_values;
+	    return $existing_cpts;
 	}
 
 
@@ -293,6 +262,20 @@ class mng_cpt {
 
 
 
+	// Ignore Upper & Lower case in search
+	public function ignore_case_in_search($query) {
+    	if (is_admin() || !is_search()) {
+        	return;
+    	}
+
+    	$search_term = $query->get('s');
+    	if (!empty($search_term)) {
+        	$query->set('s', strtolower($search_term));
+    	}
+	}
+
+
+
 	/******************************************************************
 	 * 
 	 * ADMIN-POST FUNCTIONS
@@ -309,13 +292,13 @@ class mng_cpt {
 
 		if (wp_verify_nonce($nonce, 'mng_cpt_nonce')) {		
 
-			$existing_values = get_option('mng_cpt_names', array());		
-			$index = array_search($post_type, $existing_values);
+			$existing_cpts = get_option('mng_cpt_names', array());		
+			$index = array_search($post_type, $existing_cpts);
 
 			if( $index !== FALSE) {
-				unset($existing_values[$index]);					
+				unset($existing_cpts[$index]);					
 				delete_option('mng_cpt_names');
-				update_option('mng_cpt_names', $existing_values);
+				update_option('mng_cpt_names', $existing_cpts);
 			}
 						
 			wp_redirect(admin_url('admin.php?page=manage_cpts'));
@@ -355,13 +338,13 @@ class mng_cpt {
 			}
 
 			// Update options table array storing CPTs
-			$existing_values = get_option('mng_cpt_names', array());
-			$index = array_search($post_type, $existing_values);
+			$existing_cpts = get_option('mng_cpt_names', array());
+			$index = array_search($post_type, $existing_cpts);
 
 			if( $index !== FALSE) {
-				$existing_values[$index] = $rename;
+				$existing_cpts[$index] = $rename;
 				delete_option('mng_cpt_names');
-				update_option('mng_cpt_names', $existing_values);
+				update_option('mng_cpt_names', $existing_cpts);
 			}
 
 			wp_redirect(admin_url('admin.php?page=manage_cpts'));
