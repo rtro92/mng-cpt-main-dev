@@ -6,6 +6,11 @@ Author: Myles Taylor
 Version: 1.0.0
 */
 
+
+if (!defined('ABSPATH')) {
+	exit;
+}
+
 class mng_cpt {
 
 	public function __construct() {
@@ -22,11 +27,17 @@ class mng_cpt {
 		
 		// Activate CPTS
 		add_action('init', array($this, 'activate_cpts'));
-				
+		
+		// Show CPTS in Search Results
+		// add_action('pre_get_posts', array($this, 'include_cpts_in_search'));
+		add_filter('posts_search', array($this, 'modify_search_query'), 10, 2);
+
 		// ADMIN POST ACTIONS
 		add_action('admin_post_mng_cpt_delete', array($this, 'custom_post_type_manager_delete'));
 		add_action('admin_post_mng_cpt_rename', array($this, 'mng_cpt_rename_posts'));
-		
+
+		// Ignore case in search
+		add_action('pre_get_posts', array($this, 'ignore_case_in_search'));		
 	}
 
 	
@@ -73,12 +84,14 @@ class mng_cpt {
 
 	// Setup Sections
 	public function setup_sections() {
-		add_settings_section('first_section', '', '', 'manage_cpts');		
+		add_settings_section('first_section', '', array($this, 'section_callback'), 'manage_cpts');		
 	}
 
 
+	public function section_callback($args) {
 
-	// Set up fields for new CPT
+	}
+
 	public function setup_fields() {
 		$fields = array(
 			array(
@@ -112,27 +125,47 @@ class mng_cpt {
 		if(!$value) { // if no value exists
 			$value = $args['default']; // Set default
 		}
-		
-	
-		if (is_array($value)) {
-			$value = implode(',',$value);
+
+		// Check which type of field we want
+		switch($args['type']){
+			case 'text':
+				if (is_array($value)) {
+					$value = implode(',',$value);
+				}
+				printf(
+				    '<input name="%1$s[]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
+				    $args['uid'],
+				    $args['type'],
+				    $args['placeholder'],
+				    ''
+				);
+				break;
+			case 'textarea':
+				printf( '<textarea name="%1$s" id="%1$s" placeholder="%2$s" rows="5" cols="50">%3$s</textarea>',
+					$args['uid'], $args['placeholder'], $value
+				);
+				break;
+			case 'select':
+				if(!empty($args['options']) && is_array($args['options'])) {
+
+					$options_markup = '';
+					foreach($args['options'] as $key => $label ){					
+						$options_markup .= sprintf( '<option value="%s" %s>%s</option>', $key, selected($value, $key, false), $label );
+
+					}
+					printf( '<select name="%1$s" id="%1$s">%2$s</select>', $args['uid'], $options_markup );
+				}
+				break;
 		}
-		printf(
-		    '<input name="%1$s[]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
-		    $args['uid'],
-		    $args['type'],
-		    $args['placeholder'],
-		    ''
-		);
-				
+
 		// If there is helper text
 		if($helper = $args['helper']) {
-			printf( '<span class="helper">%s</span>', $helper ); 
+			printf( '<span class="helper">%s</span>', $helper ); // show it
 		}
 
 		//If there is supplemental text
 		if( $supplemental = $args['supplemental']) {
-			printf( '<p class="description">%s</p>', $supplemental);
+			printf( '<p class="description">%s</p>', $supplemental); // show it
 		}
 	}
 
@@ -140,7 +173,6 @@ class mng_cpt {
 
 	// Sanitizes names
 	public function sanitize_cpt_names($value) {
-		
 	    $existing_cpts = get_option('mng_cpt_names', array());
 
 	    if (!empty($value)) {
@@ -273,6 +305,114 @@ class mng_cpt {
         	$query->set('s', strtolower($search_term));
     	}
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+	// Allow CPT types to be listed in WP Search
+	public function include_cpts_in_search($query) {
+
+		if(is_search() && !is_admin()) {
+
+			$existing_cpts = get_option('mng_cpt_names', array());
+			
+			$search_term = $query->get('s');
+
+			// if(in_array($search_term, $existing_cpts)) {
+			if($search_term === 'hats') {
+
+				$searched_cpt_posts = $this->get_all_cpts($search_term);
+
+				if (!empty($searched_cpt_posts)) {
+					$query->set('post_type', $searched_cpt_posts);
+				}
+			}
+
+
+		}
+	}
+
+	
+	// Fetch all CPTs to display in Search
+	private function get_all_cpts($search_term) {
+
+		$args = array(
+			'public' => true,
+			'_builtin' => false
+		);
+
+		$output = 'names';
+		$operator = 'and';
+		$post_types = get_post_types($args, $output, $operator);
+
+		return in_array($search_term, $post_types) ? $post_types : array();
+	}
+
+
+
+	public function modify_search_query($search, $query) {
+
+		if (is_search() && !is_admin()) {
+
+			$existing_cpts = get_option('mng_cpt_names', array());
+
+			$search_term = $query->get('s');
+			
+			foreach($existing_cpts as $ec) {
+				error_log($ec.' /n', 4);
+			}
+
+			// if (in_array(strtolower($search_term), array_map(str$existing_cpts)) {
+			if(in_array(strtolower($search_term), array_map(function($item) {
+				return strtolower($item);
+				}, $existing_cpts))) {
+			
+
+			// if($search_term === 'hats') {	
+
+				$searched_cpt_posts = $this->get_all_cpts($search_term);
+
+				if(!empty($searched_cpt_posts)) {
+
+					global $wpdb;
+					
+					$search = str_replace(
+						"AND ((({$wpdb->posts}.post_title",
+                        "AND ((({$wpdb->posts}.post_title OR {$wpdb->posts}.post_type",
+                        $search
+					);
+				}
+			}
+		}
+		
+		return $search;
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
