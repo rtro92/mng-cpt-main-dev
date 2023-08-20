@@ -88,36 +88,36 @@ class mng_cpt {
 	}
 
 
+	// For expanding later
 	public function section_callback($args) {
-
+		// unused for now
 	}
 
+
+	// Setup fields
 	public function setup_fields() {
+		
 		$fields = array(
-			array(
-				'uid'			=> 'mng_cpt_names',
-				'label'			=> 'Name of Custom Post Type',
-				'section'		=> 'first_section',
-				'type'			=> 'text',
-				'options'		=> false,
-				'placeholder'	=> 'e.g. Movies',
-				'helper'		=> '',
-				'supplemental'  => 'Enter the name of the new post type to create',
-				'default' 		=> array()
-			)				
+			
+			'uid'			=> 'mng_cpt_names',
+			'label'			=> 'Name of Custom Post Type',
+			'section'		=> 'first_section',
+			'type'			=> 'text',
+			'options'		=> false,
+			'placeholder'	=> 'e.g. Movies',
+			'helper'		=> '',
+			'supplemental'  => 'Enter the name of the new post type to create',
+			'default' 		=> array()
+							
 		);
-
-		foreach($fields as $field) {
-
-			add_settings_field( $field['uid'], $field['label'], array($this, 'field_callback'), 'manage_cpts', $field['section'], $field);
-			register_setting('manage_cpts', 'mng_cpt_names', array($this, 'sanitize_cpt_names'));
-
-		}		
+		
+		add_settings_field( $fields['uid'], $fields['label'], array($this, 'field_callback'), 'manage_cpts', $fields['section'], $fields);
+		register_setting('manage_cpts', 'mng_cpt_names', array($this, 'sanitize_cpt_names'));
 
 	}
 
 
-
+	
 	public function field_callback($args) {
 
 		$value = get_option($args['uid']); // Get the current value, if there is one
@@ -214,7 +214,7 @@ class mng_cpt {
 						<div class="mng-cpt-col col-number">Number of Posts: <?php echo $total_posts;?></div>
 						<div class="mng-cpt-col col-rename">
 							<div class="rename-container" data-index="<?php echo $index;?>" data-static-url=<?php echo $link;?> v-cloak>
-						  		<input type="text" v-model="textInput">
+						  		<input type="text" v-model="textInput" placeholder="Enter text to rename...">
 						  		<a :class="['mng-cpt-btn', 'btn-rename', { 'has-text': hasTextClass }]" :href="dynamicUrl" :disabled="isLinkDisabled">Rename</a>
 							</div>
 						</div>
