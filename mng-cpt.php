@@ -6,6 +6,8 @@ Author: Myles Taylor
 Version: 1.0.0
 */
 
+// https://wordpress.stackexchange.com/questions/133739/how-to-register-add-multiple-options-into-one-field-in-wordpress
+// https://code.tutsplus.com/the-wordpress-settings-api-part-8-validation-sanitisation-and-input-i--wp-25361t
 
 if (!defined('ABSPATH')) {
 	exit;
@@ -84,7 +86,12 @@ class mng_cpt {
 
 	// Setup Sections
 	public function setup_sections() {
-		add_settings_section('first_section', '', array($this, 'section_callback'), 'manage_cpts');		
+		add_settings_section(
+			'first_section', 	// unique section ID
+			'', 				// section title
+			array($this, 'section_callback'), // callback ~ can be left empty
+			'manage_cpts' 		// settings page slug
+		);		
 	}
 
 
@@ -98,27 +105,97 @@ class mng_cpt {
 	public function setup_fields() {
 		
 		$fields = array(
+			array(
 			
-			'uid'			=> 'mng_cpt_names',
-			'label'			=> 'Name of Custom Post Type',
-			'section'		=> 'first_section',
-			'type'			=> 'text',
-			'options'		=> false,
-			'placeholder'	=> 'e.g. Movies',
-			'helper'		=> '',
-			'supplemental'  => 'Enter the name of the new post type to create',
-			'default' 		=> array()
+				'uid'			=> 'cpt_name', // in brackets in input name				
+				'label'			=> 'Name of Custom Post Type',
+				'section'		=> 'first_section',
+				'type'			=> 'text',
+				'options'		=> false,
+				'placeholder'	=> 'e.g. Movies',
+				'helper'		=> '',
+				'supplemental'  => 'Enter the name of the new post type to create',
+				'default' 		=> array()
+			),
+			// array(
+			
+			// 	'uid'			=> 'mng_cpt_enable_gutenberg',
+			// 	'label'			=> 'Enable Gutenberg',
+			// 	'section'		=> 'first_section',
+			// 	'type'			=> 'checkbox',
+			// 	'description'	=> 'Enables gutenberg',										
+			// 	'supplemental'  => 'Check to enable gutenberg',
+			// 	'options'		=> array(
+			// 		'option1' => 'Option 1',					
+			// 	),
+			// 	'default' 		=> array()
+			// ),
+			array(
+			
+				'uid'			=> 'other',
+				'label'			=> 'This is the other field',
+				'section'		=> 'first_section',
+				'type'			=> 'text',
+				'options'		=> false,
+				'placeholder'	=> 'e.g. Movies',
+				'helper'		=> '',
+				'supplemental'  => 'Enter the name of the new post type to create',
+				'default' 		=> array()
+			),
 							
 		);
 		
-		add_settings_field( $fields['uid'], $fields['label'], array($this, 'field_callback'), 'manage_cpts', $fields['section'], $fields);
-		register_setting('manage_cpts', 'mng_cpt_names', array($this, 'sanitize_cpt_names'));
+		foreach( $fields as $field) {
+			add_settings_field(
+				
+				$field['uid'], 					// unique field ID ~ twitter	
+				$field['label'],				// Field title
+				array($this, 'field_callback'), // callback function
+				'manage_cpts',					// settings page slug // should match beginning of name ~ sandbox_theme_input_examples
+				$field['section'],				// section ID
+
+				$field 							// additional information ~ passing entire array in
+			);
+			// register_setting('manage_cpts', $field['uid'], array($this, 'sanitize_cpt_names'));
+		}
+
+		// add_settings_field(								
+		// 	'manage_cpts',
+		// 	'label here',
+		// 	array($this, 'field_callback'),
+		// 	'manage_cpts',					
+		// 	'first_section',				
+		// 	array(			
+		// 		'uid'			=> 'mng_cpt_names',
+		// 		'label'			=> 'Name of Custom Post Type',
+		// 		'section'		=> 'first_section',
+		// 		'type'			=> 'text',
+		// 		'options'		=> false,
+		// 		'placeholder'	=> 'e.g. Movies',
+		// 		'helper'		=> '',
+		// 		'supplemental'  => 'Enter the name of the new post type to create',
+		// 		'default' 		=> array()
+		// 	)				
+		// );
+
+		register_setting(
+			'manage_cpts', 		// unique group name ~ used in form
+			'mng_cpt_names',	// unique option name (saved into database)
+			array($this, 'sanitize_cpt_names')
+		);
 
 	}
 
+	// manage_cpts ~ page slug
+	// mng_cpt_names ~ name of option
+	// array key should be uid
 
 	
 	public function field_callback($args) {
+
+		// - I'm thinking $args is the `$field` variable that is added to each `add_settings_field` function.
+		// - So, `$args` would be the array that is manually created
+
 
 		$value = get_option($args['uid']); // Get the current value, if there is one
 		
@@ -129,39 +206,75 @@ class mng_cpt {
 		// Check which type of field we want
 		switch($args['type']){
 			case 'text':
+				
+				// '<input name="manage_cpts[][%1$s]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
+				// '<input name="{ option name in database, maybe should match ID parameter } [{ adds array }] {[ key name for array to be inserted }] "
 				if (is_array($value)) {
 					$value = implode(',',$value);
 				}
 				printf(
-				    '<input name="%1$s[]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
+				    '<input name="mng_cpt_names[][%1$s]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
 				    $args['uid'],
 				    $args['type'],
 				    $args['placeholder'],
 				    ''
 				);
 				break;
+
 			case 'textarea':
 				printf( '<textarea name="%1$s" id="%1$s" placeholder="%2$s" rows="5" cols="50">%3$s</textarea>',
 					$args['uid'], $args['placeholder'], $value
 				);
 				break;
+
 			case 'select':
 				if(!empty($args['options']) && is_array($args['options'])) {
 
 					$options_markup = '';
-					foreach($args['options'] as $key => $label ){					
+
+					foreach($args['options'] as $key => $label ){	
+
 						$options_markup .= sprintf( '<option value="%s" %s>%s</option>', $key, selected($value, $key, false), $label );
 
 					}
+
 					printf( '<select name="%1$s" id="%1$s">%2$s</select>', $args['uid'], $options_markup );
 				}
 				break;
+
+			case 'checkbox':
+                if( ! empty ( $args['options'] ) && is_array( $args['options'] ) ){
+
+                    $options_markup = '';
+
+                    $iterator = 0;
+
+                    foreach( $args['options'] as $key => $label ){
+
+                    	$checked_value = $key ? array_search( $key, $value, true ) : '';
+
+
+                        $iterator++;
+                        $options_markup .= sprintf(
+                        	'<label for="%1$s_%6$s"><input id="%1$s_%6$s" name="%1$s[]" type="%2$s" value="%3$s" %4$s />%5$s</label><br/>',
+                        	$args['uid'],
+                        	$args['type'],
+                        	$key,
+                        	// checked( $value[ array_search( $key, $value, true ) ], $key, false ),
+                        	$checked_value,
+                        	$label,
+                        	$iterator
+                        );                        
+                    }
+                    printf( '<fieldset>%s</fieldset>', $options_markup );
+                }
+                break;
 		}
 
 		// If there is helper text
-		if($helper = $args['helper']) {
-			printf( '<span class="helper">%s</span>', $helper ); // show it
-		}
+		// if($helper = $args['helper']) {
+		// 	printf( '<span class="helper">%s</span>', $helper ); // show it
+		// }
 
 		//If there is supplemental text
 		if( $supplemental = $args['supplemental']) {
@@ -170,19 +283,51 @@ class mng_cpt {
 	}
 
 
+	/******************************************************************************************
+	 * 
+	 * - Sanitize function runs once
+	 * - Passes all field values into it
+	 * - logging input should return all field values
+	 * - so $value should be an array containing all of the data of the fields
+	 * 
+	 * - maybe try changing the `input name="abcd[][]" format to only have one empty bracket
+	 * - and then structuring the data into an array here and merging it before returning it
+	 * 
+	 * ****************************************************************************************/
 
-	// Sanitizes names
-	public function sanitize_cpt_names($value) {
-	    $existing_cpts = get_option('mng_cpt_names', array());
 
-	    if (!empty($value)) {
-	        $sanitized_values = array_map('sanitize_text_field', $value);
-	        $merged_values = array_merge($existing_cpts, $sanitized_values);
-	        return array_unique($merged_values);
-	    }
-	    
-	    return $existing_cpts;
-	}
+
+public function sanitize_cpt_names($input) {
+    $existing_cpts = get_option('mng_cpt_names', array());
+
+    if (!empty($input)) {
+        $merged_values = $existing_cpts; // Start with existing data
+
+        foreach ($input as $item) {
+            foreach ($item as $key => $value) {
+                // Sanitize each field using its key
+                $sanitized_item[$key] = strip_tags(stripslashes($value));
+            }
+
+            // Check if the item already exists based on cpt_name
+            $existing_index = array_search($sanitized_item['cpt_name'], array_column($merged_values, 'cpt_name'));
+
+            if ($existing_index !== false) {
+                // If it exists, update the existing item
+                $merged_values[$existing_index] = $sanitized_item;
+            } else {
+                // If it doesn't exist, append the new item
+                $merged_values[] = $sanitized_item;
+            }
+        }
+
+        // Return the merged data
+        return $merged_values;
+    }
+
+    return $existing_cpts;
+}
+
 
 
 
@@ -197,7 +342,9 @@ class mng_cpt {
 			echo '<div class="mng-cpt-current-wrap">';
 
 			if($cpts) {
-				foreach( $cpts as $index => $cpt) {
+				foreach( $cpts as $k => $v) {
+
+					$cpt = $v['cpt_name'];
 
 					$post_count = wp_count_posts(strtolower($cpt));						
 					
@@ -244,8 +391,12 @@ class mng_cpt {
 			<div class="create-box">
 				<form method="post" action="options.php">
 					<?php
-						settings_fields('manage_cpts');
-						do_settings_sections('manage_cpts');
+						settings_fields('manage_cpts');			// option group name ~ register setting
+						do_settings_sections('manage_cpts'); 	// page slug
+					?>
+					<!-- <label for="mng_cpt_gutenberg_checkbox">Enable Gutenberg?</label> -->
+					<!-- <input type="checkbox" name="mng_cpt_gutenberg_checkbox" id="mng_cpt_gutenberg_checkbox"> -->
+					<?php
 						submit_button('Add New Custom Post Type');
 					?>
 				</form>
@@ -261,7 +412,9 @@ class mng_cpt {
 		$cpts = get_option('mng_cpt_names');
 
 		if($cpts) {
-			foreach($cpts as $k=>$cpt){
+			foreach($cpts as $k=>$v){
+
+				$cpt = $v['cpt_name'];
 				
 				$args = array(
 					'labels' => array(
@@ -269,7 +422,8 @@ class mng_cpt {
 						'singular_name' => $cpt
 					),
 					'public' => true,
-					'has_archive' => true
+					'has_archive' => true,
+					// 'show_in_rest' => true
 				);
 
 				register_post_type($cpt, $args);
@@ -432,13 +586,14 @@ class mng_cpt {
 
 		if (wp_verify_nonce($nonce, 'mng_cpt_nonce')) {		
 
-			$existing_cpts = get_option('mng_cpt_names', array());		
-			$index = array_search($post_type, $existing_cpts);
-
-			if( $index !== FALSE) {
-				unset($existing_cpts[$index]);					
-				delete_option('mng_cpt_names');
-				update_option('mng_cpt_names', $existing_cpts);
+			$existing_cpts = get_option('mng_cpt_names', array());					
+			
+			foreach ($existing_cpts as $index => $cpt ) {
+				if($cpt['cpt_name'] === $post_type) {
+					unset($existing_cpts[$index]);					
+					delete_option('mng_cpt_names');
+					update_option('mng_cpt_names', $existing_cpts);
+				}
 			}
 						
 			wp_redirect(admin_url('admin.php?page=manage_cpts'));
@@ -478,13 +633,15 @@ class mng_cpt {
 			}
 
 			// Update options table array storing CPTs
-			$existing_cpts = get_option('mng_cpt_names', array());
-			$index = array_search($post_type, $existing_cpts);
+			$existing_cpts = get_option('mng_cpt_names', array());			
+			
+			foreach( $existing_cpts as $index => $cpt) {
 
-			if( $index !== FALSE) {
-				$existing_cpts[$index] = $rename;
-				delete_option('mng_cpt_names');
-				update_option('mng_cpt_names', $existing_cpts);
+				if($cpt['cpt_name'] === $post_type) {
+					$existing_cpts[$index]['cpt_name'] = $rename;					
+					delete_option('mng_cpt_names');
+					update_option('mng_cpt_names', $existing_cpts);
+				}
 			}
 
 			wp_redirect(admin_url('admin.php?page=manage_cpts'));
