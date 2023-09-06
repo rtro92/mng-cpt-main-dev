@@ -117,19 +117,19 @@ class mng_cpt {
 				'supplemental'  => 'Enter the name of the new post type to create',
 				'default' 		=> array()
 			),
-			// array(
+			array(
 			
-			// 	'uid'			=> 'mng_cpt_enable_gutenberg',
-			// 	'label'			=> 'Enable Gutenberg',
-			// 	'section'		=> 'first_section',
-			// 	'type'			=> 'checkbox',
-			// 	'description'	=> 'Enables gutenberg',										
-			// 	'supplemental'  => 'Check to enable gutenberg',
-			// 	'options'		=> array(
-			// 		'option1' => 'Option 1',					
-			// 	),
-			// 	'default' 		=> array()
-			// ),
+				'uid'			=> 'mng_cpt_enable_gutenberg',
+				'label'			=> 'Enable Gutenberg',
+				'section'		=> 'first_section',
+				'type'			=> 'checkbox',
+				'description'	=> 'Enables gutenberg',										
+				'supplemental'  => 'Check to enable gutenberg',
+				'options'		=> array(
+					'option1' => 'Option 1',					
+				),
+				'default' 		=> array()
+			),
 			array(
 			
 				'uid'			=> 'other',
@@ -159,25 +159,6 @@ class mng_cpt {
 			// register_setting('manage_cpts', $field['uid'], array($this, 'sanitize_cpt_names'));
 		}
 
-		// add_settings_field(								
-		// 	'manage_cpts',
-		// 	'label here',
-		// 	array($this, 'field_callback'),
-		// 	'manage_cpts',					
-		// 	'first_section',				
-		// 	array(			
-		// 		'uid'			=> 'mng_cpt_names',
-		// 		'label'			=> 'Name of Custom Post Type',
-		// 		'section'		=> 'first_section',
-		// 		'type'			=> 'text',
-		// 		'options'		=> false,
-		// 		'placeholder'	=> 'e.g. Movies',
-		// 		'helper'		=> '',
-		// 		'supplemental'  => 'Enter the name of the new post type to create',
-		// 		'default' 		=> array()
-		// 	)				
-		// );
-
 		register_setting(
 			'manage_cpts', 		// unique group name ~ used in form
 			'mng_cpt_names',	// unique option name (saved into database)
@@ -193,10 +174,8 @@ class mng_cpt {
 	
 	public function field_callback($args) {
 
-		// - I'm thinking $args is the `$field` variable that is added to each `add_settings_field` function.
-		// - So, `$args` would be the array that is manually created
-
-
+		// $args = 
+		
 		$value = get_option($args['uid']); // Get the current value, if there is one
 		
 		if(!$value) { // if no value exists
@@ -206,9 +185,8 @@ class mng_cpt {
 		// Check which type of field we want
 		switch($args['type']){
 			case 'text':
-				
-				// '<input name="manage_cpts[][%1$s]" id="%1$s" type="%2$s" placeholder="%3$s" value="%4$s" />',
-				// '<input name="{ option name in database, maybe should match ID parameter } [{ adds array }] {[ key name for array to be inserted }] "
+								
+				// '<input name="{ option name in database } [{ adds array }] {[ key name for array to be inserted }] "
 				if (is_array($value)) {
 					$value = implode(',',$value);
 				}
@@ -253,10 +231,9 @@ class mng_cpt {
 
                     	$checked_value = $key ? array_search( $key, $value, true ) : '';
 
-
                         $iterator++;
                         $options_markup .= sprintf(
-                        	'<label for="%1$s_%6$s"><input id="%1$s_%6$s" name="%1$s[]" type="%2$s" value="%3$s" %4$s />%5$s</label><br/>',
+                        	'<label for="%1$s_%6$s"><input id="%1$s_%6$s" name="mng_cpt_names[][%1$s]" type="%2$s" value="%3$s" %4$s />%5$s</label><br/>',
                         	$args['uid'],
                         	$args['type'],
                         	$key,
@@ -289,10 +266,7 @@ class mng_cpt {
 	 * - Passes all field values into it
 	 * - logging input should return all field values
 	 * - so $value should be an array containing all of the data of the fields
-	 * 
-	 * - maybe try changing the `input name="abcd[][]" format to only have one empty bracket
-	 * - and then structuring the data into an array here and merging it before returning it
-	 * 
+	 * 	 	 
 	 * ****************************************************************************************/
 
 
@@ -301,7 +275,7 @@ public function sanitize_cpt_names($input) {
     $existing_cpts = get_option('mng_cpt_names', array());
 
     if (!empty($input)) {
-        $merged_values = $existing_cpts; // Start with existing data
+        $merged_values = $existing_cpts; 
 
         foreach ($input as $item) {
             foreach ($item as $key => $value) {
@@ -409,12 +383,16 @@ public function sanitize_cpt_names($input) {
 
 	// Activate CPTs in back-end
 	public function activate_cpts() {
+
 		$cpts = get_option('mng_cpt_names');
 
 		if($cpts) {
-			foreach($cpts as $k=>$v){
+
+			foreach($cpts as $k=>$v) {
 
 				$cpt = $v['cpt_name'];
+
+				$show = isset($v['mng_cpt_enable_gutenberg']) ? $v['mng_cpt_enable_gutenberg'] : NULL;
 				
 				$args = array(
 					'labels' => array(
@@ -422,8 +400,8 @@ public function sanitize_cpt_names($input) {
 						'singular_name' => $cpt
 					),
 					'public' => true,
-					'has_archive' => true,
-					// 'show_in_rest' => true
+					'has_archive' => true,					
+					'show_in_rest' => $show ? true : false
 				);
 
 				register_post_type($cpt, $args);
