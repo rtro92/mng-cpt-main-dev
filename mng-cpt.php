@@ -316,6 +316,7 @@ public function sanitize_cpt_names($input) {
 			echo '<div class="mng-cpt-current-wrap">';
 
 			if($cpts) {
+
 				foreach( $cpts as $k => $v) {
 
 					$cpt = $v['cpt_name'];
@@ -327,17 +328,25 @@ public function sanitize_cpt_names($input) {
 						$total_posts = 0;
 					} 
 
-					$link = admin_url('admin-post.php?action=mng_cpt_rename&post_type='.$cpt.'&mng_cpt_nonce='.wp_create_nonce('mng_cpt_nonce').'&rename=');						
+					$link_rename 	= admin_url('admin-post.php?action=mng_cpt_rename&post_type='.$cpt.'&mng_cpt_nonce='.wp_create_nonce('mng_cpt_nonce').'&rename=');						
+					$link_gutenberg = admin_url('admin-post.php?action=mng_cpt_rename&post_type='.$cpt.'&mng_cpt_nonce='.wp_create_nonce('mng_cpt_nonce').'&rename=');
+
+					// $gutenberg_checked = checked( $value[ array_search( $key, $value, true ) ], $key, false ),
+
 					?>
 
 					<div class="mng-cpt-current-row">
 						<div class="mng-cpt-col col-name"><?php echo $cpt;?></div>
 						<div class="mng-cpt-col col-number">Number of Posts: <?php echo $total_posts;?></div>
 						<div class="mng-cpt-col col-rename">
-							<div class="rename-container" data-index="<?php echo $index;?>" data-static-url=<?php echo $link;?> v-cloak>
+							<div class="rename-container" data-index="<?php echo $index;?>" data-static-url=<?php echo $link_rename;?> v-cloak>
 						  		<input type="text" v-model="textInput" placeholder="Enter text to rename...">
 						  		<a :class="['mng-cpt-btn', 'btn-rename', { 'has-text': hasTextClass }]" :href="dynamicUrl" :disabled="isLinkDisabled">Rename</a>
 							</div>
+						</div>
+						<div class="mng-cpt-col col-gutenberg">
+							<label for="enable_gutenberg_<?php echo $cpt;?>">Enable Gutenberg?</label>
+							<input type="checkbox" id="enable_gutenberg_<?php echo $cpt;?>" data-cpt-name="<?php echo $cpt;?>" data-gutenberg-url="<?php echo $link_gutenberg;?>">
 						</div>
 						<div class="mng-cpt-col col-delete">
 							<div class="mng-cpt-btn btn-delete">Delete</div>
@@ -399,9 +408,10 @@ public function sanitize_cpt_names($input) {
 						'name' => $cpt,
 						'singular_name' => $cpt
 					),
-					'public' => true,
-					'has_archive' => true,					
-					'show_in_rest' => $show ? true : false
+					'public' 		=> true,
+					'has_archive' 	=> true,					
+					'show_in_rest' 	=> $show ? true : false,
+					'supports'		=> array('title', 'editor', 'thumbnail', 'excerpt')
 				);
 
 				register_post_type($cpt, $args);

@@ -1,14 +1,28 @@
 jQuery(document).ready(function($) {
-	
+  
+  // Delete button ~ show yes/no	
 	$('.btn-delete').on('click', function() {
 		$(this).addClass('active');	
 		$(this).next('.mng-hidden').css('visibility', 'visible');
 	});
 
+  // Delete button ~ hide yes/no
 	$('.del-no').on('click', function() {
 		$(this).parent().css('visibility', 'hidden');
 		$(this).parent().prev().removeClass('active');
 	});
+
+  // Enable Gutenberg
+  $('.col-gutenberg input[type="checkbox"]').on('click', function(e) {
+    const cpt = $(this).attr('data-cpt-name');
+    const url = $(this).attr('data-gutenberg-url');
+    window.location.href= url;
+    e.stopPropagation();
+  });
+
+  $('.col-gutenberg label').on('click', function(e) {
+    e.stopPropagation();
+  });
 
 });
 
